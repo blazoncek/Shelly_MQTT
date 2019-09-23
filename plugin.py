@@ -634,8 +634,8 @@ class BasePlugin:
             Domoticz.Debug(str(e))
          # SENSOR type, not command->process - device inside temperature!
          elif (len(mqttpath)>3) and (mqttpath[2] == "temperature") and (mqttpath[3].isdigit()):
-          # support for multiple temperature sensor on custom ESP boards (shellies/esp-XXXXXX/temperature/0)
-          # best used with multiple DS18S20 senors
+          # support for multiple temperature sensor on custom ESP boards (i.e. shellies/esp-XXXXXX/temperature/0)
+          # best used with multiple DS18S20 sensors
           unitname = mqttpath[1]+"-temp-"+mqttpath[3]
           unitname = unitname.strip()
           iUnit = -1
