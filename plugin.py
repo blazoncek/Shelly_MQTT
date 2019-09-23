@@ -633,6 +633,41 @@ class BasePlugin:
            except Exception as e:
             Domoticz.Debug(str(e))
          # SENSOR type, not command->process - device inside temperature!
+         elif (len(mqttpath)>3) and (mqttpath[2] == "temperature") and (mqttpath[3].isdigit()):
+          # support for multiple temperature sensor on custom ESP boards (shellies/esp-XXXXXX/temperature/0)
+          # best used with multiple DS18S20 senors
+          unitname = mqttpath[1]+"-temp-"+mqttpath[3]
+          unitname = unitname.strip()
+          iUnit = -1
+          for Device in Devices:
+           try:
+            if (Devices[Device].DeviceID.strip() == unitname):
+             iUnit = Device
+             break
+           except:
+            pass
+          if iUnit<0: # if device does not exists in Domoticz, than create it
+            try:
+             iUnit = 0
+             for x in range(1,256):
+              if x not in Devices:
+               iUnit=x
+               break
+             if iUnit==0:
+              iUnit=len(Devices)+1
+             Domoticz.Device(Name=unitname, Unit=iUnit, TypeName="Temperature",Used=0,DeviceID=unitname).Create()
+            except Exception as e:
+             Domoticz.Debug(str(e))
+             return False
+          try:
+           mval = float(message)
+          except:
+           mval = str(message).strip()
+          try:
+            Devices[iUnit].Update(nValue=0,sValue=str(mval))
+          except Exception as e:
+            Domoticz.Debug(str(e))
+         # SENSOR type, not command->process - device inside temperature!
          elif (len(mqttpath)==3) and (mqttpath[2] == "temperature"):
           unitname = mqttpath[1]+"-temp"
           unitname = unitname.strip()
