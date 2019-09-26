@@ -649,8 +649,7 @@ class BasePlugin:
             Domoticz.Debug(str(e))
          # SENSOR type, not command->process - device inside temperature!
          elif (len(mqttpath)>3) and (mqttpath[2] == "temperature") and (mqttpath[3][0:1].isdigit()):
-          # support for multiple temperature sensor on custom ESP boards (i.e. shellies/esp-XXXXXX/temperature/0)
-          # best used with multiple DS18S20 sensors
+          # support for multiple temperature sensor on custom ESP boards (i.e. shellies/esp-XXXXXX/temperature/0) best used with multiple DS18S20 sensors
           unitname = mqttpath[1]+"-temp-"+mqttpath[3][0:1]
           unitname = unitname.strip()
           iUnit = -1
@@ -831,6 +830,93 @@ class BasePlugin:
              Devices[iUnit].Update(nValue=status, sValue=dimmer)
 
           return True
+         # EMETER type, not command->process
+         if (len(mqttpath)>3) and (mqttpath[2] == "emeter"):
+          unitname = mqttpath[1]+"-"+mqttpath[3]
+          unitname = unitname.strip()
+          funcid = 0
+          try:
+           funcid = int(mqttpath[3].strip()) # meter ID
+          except:
+           pass
+          subval = mqttpath[4].strip() # power, energy, voltage (ignoring returned_energy and reactive_power)
+          if subval=="power" or subval=="energy":
+           if funcid in [0,1,2,3]:
+            unitname = mqttpath[1]+"-"+str(funcid)+"-energy" # shellyem-XXXXXX-0-energy
+          elif subval=="voltage"
+           if funcid in [0,1,2,3]:
+            unitname = mqttpath[1]+"-"+str(funcid)+"-voltage" # shellyem-XXXXXX-0-voltage
+          else:
+           return False # not a proper meter
+          iUnit = -1
+          for Device in Devices: # find existing device
+           try:
+            if (Devices[Device].DeviceID.strip() == unitname):
+             iUnit = Device
+             break
+           except:
+            pass
+          if iUnit<0: # if device does not exists in Domoticz, then create it
+            try:
+             iUnit = 0
+             for x in range(1,256):
+              if x not in Devices:
+               iUnit=x
+               break
+             if iUnit==0:
+              iUnit=len(Devices)+1
+             if subval=="voltage":
+              Domoticz.Device(Name=unitname, Unit=iUnit,Type=243,Subtype=8,Used=1,DeviceID=unitname).Create()
+             elif self.powerread:
+              if subval=="energy" or subval=="power":
+               Domoticz.Device(Name=unitname, Unit=iUnit,Type=243,Subtype=29,Used=1,DeviceID=unitname).Create()
+            except Exception as e:
+             Domoticz.Debug(str(e))
+             return False
+          if subval=="voltage":
+           try:
+            mval = float(str(message).strip())
+           except:
+            mval = str(message).strip()
+           try:
+            Devices[iUnit].Update(nValue=0,sValue=str(mval))
+            return True
+           except Exception as e:
+            Domoticz.Debug(str(e))
+            return False
+          elif self.powerread: # do we accept power readings?
+           try:
+            curval = Devices[iUnit].sValue
+            prevdata = curval.split(";")
+           except:
+            prevdata = []
+           if len(prevdata)<2:
+            prevdata.append(0)
+            prevdata.append(0)
+           try:
+            mval = float(str(message).strip())
+           except:
+            mval = str(message).strip()
+           sval = ""
+           if subval=="power" and self.powerread==2:
+            sval = str(mval)+";"+str(prevdata[1])
+           elif subval=="power" and self.powerread==1:
+            sval = str(mval)+";0"
+           elif subval=="energy" and self.powerread==2:
+            try:
+             mval2 = round((mval*0.06),4) # 10*Wh? or Watt-min??
+            except:
+             mval2 = str(mval)
+            sval = str(prevdata[0])+";"+str(mval2)
+           try:
+            if sval!="":
+             Devices[iUnit].Update(nValue=0,sValue=str(sval))
+             return True
+            else:
+             return False
+           except Exception as e:
+            Domoticz.Debug(str(e))
+            return False
 
 global _plugin
 _plugin = BasePlugin()
