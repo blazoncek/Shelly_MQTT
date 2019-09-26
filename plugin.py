@@ -831,7 +831,7 @@ class BasePlugin:
 
           return True
          # EMETER type, not command->process
-         if (len(mqttpath)>3) and (mqttpath[2] == "emeter"):
+         elif (len(mqttpath)>3) and (mqttpath[2] == "emeter"):
           unitname = mqttpath[1]+"-"+mqttpath[3]
           unitname = unitname.strip()
           funcid = 0
@@ -843,7 +843,7 @@ class BasePlugin:
           if subval=="power" or subval=="energy":
            if funcid in [0,1,2,3]:
             unitname = mqttpath[1]+"-"+str(funcid)+"-energy" # shellyem-XXXXXX-0-energy
-          elif subval=="voltage"
+          elif subval=="voltage":
            if funcid in [0,1,2,3]:
             unitname = mqttpath[1]+"-"+str(funcid)+"-voltage" # shellyem-XXXXXX-0-voltage
           else:
@@ -880,7 +880,6 @@ class BasePlugin:
             mval = str(message).strip()
            try:
             Devices[iUnit].Update(nValue=0,sValue=str(mval))
-            return True
            except Exception as e:
             Domoticz.Debug(str(e))
             return False
@@ -911,12 +910,12 @@ class BasePlugin:
            try:
             if sval!="":
              Devices[iUnit].Update(nValue=0,sValue=str(sval))
-             return True
             else:
              return False
            except Exception as e:
             Domoticz.Debug(str(e))
             return False
+          return True
 
 global _plugin
 _plugin = BasePlugin()
